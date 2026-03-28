@@ -1,4 +1,5 @@
 const STORAGE_KEY = "inventario_registros_v1";
+const DRAFT_STORAGE_KEY = "inventario_registro_borrador_v1";
 
 const state = {
   records: [],
@@ -50,6 +51,45 @@ function loadRecords() {
 
 function saveRecords() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state.records));
+}
+
+function getDraftData() {
+  return {
+    productType: els.productType.value,
+    customType: els.customType.value.trim(),
+    productName: els.productName.value,
+    barcode: els.barcodeInput.value,
+    quantity: els.quantity.value,
+    location: els.location.value,
+  };
+}
+
+function saveDraft() {
+  localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(getDraftData()));
+}
+
+function clearDraft() {
+  localStorage.removeItem(DRAFT_STORAGE_KEY);
+}
+
+function loadDraft() {
+  const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+  if (!raw) return;
+
+  try {
+    const draft = JSON.parse(raw);
+    if (!draft || typeof draft !== "object") return;
+
+    els.productType.value = draft.productType || "";
+    toggleCustomType();
+    els.customType.value = draft.customType || "";
+    els.productName.value = draft.productName || "";
+    els.barcodeInput.value = draft.barcode || "";
+    els.quantity.value = draft.quantity || "1";
+    els.location.value = draft.location || "";
+  } catch (_) {
+    clearDraft();
+  }
 }
 
 function formatDate(iso) {
@@ -154,6 +194,7 @@ function resetFormAfterSave() {
   els.form.reset();
   els.quantity.value = "1";
   els.customTypeWrap.classList.add("hidden");
+  clearDraft();
 }
 
 function escapeHtml(value) {
@@ -200,6 +241,7 @@ function toggleCustomType() {
   if (!shouldShow) {
     els.customType.value = "";
   }
+  saveDraft();
 }
 
 function clearAllRecords() {
@@ -376,6 +418,7 @@ async function scanFrame() {
 
     if (barcodes.length > 0 && barcodes[0].text) {
       els.barcodeInput.value = barcodes[0].text;
+      saveDraft();
       updateScannerStatus(`Codigo detectado: ${barcodes[0].text}`);
       closeScanner();
       return;
@@ -452,6 +495,8 @@ async function openScanner() {
 
 function wireEvents() {
   els.form.addEventListener("submit", onSubmitForm);
+  els.form.addEventListener("input", saveDraft);
+  els.form.addEventListener("change", saveDraft);
   els.productType.addEventListener("change", toggleCustomType);
   els.clearBtn.addEventListener("click", clearAllRecords);
   els.exportCsvBtn.addEventListener("click", downloadCsv);
@@ -482,6 +527,7 @@ function wireEvents() {
 
 function init() {
   loadRecords();
+  loadDraft();
   wireEvents();
   renderAll();
 }
