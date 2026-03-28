@@ -73,7 +73,7 @@ body {
 
 .nav-btn {
   position: relative;
-  background: none;
+  background: #fff;
   border: none;
   padding: .5rem 1rem;
   border-radius: var(--radius-md);
@@ -81,10 +81,28 @@ body {
   font-weight: 500;
   color: var(--c-muted);
   cursor: pointer;
-  transition: background var(--transition), color var(--transition);
+  transition: background var(--transition), color var(--transition), transform var(--transition);
 }
 .nav-btn:hover { background: var(--c-bg); color: var(--c-text); }
+.nav-btn:active { transform: translateY(1px); }
 .nav-btn.active { background: var(--c-primary); color: #fff; }
+.nav-btn.active:hover { background: var(--c-primary-d); color: #fff; }
+
+.nav-btn--portal {
+  background: #fff;
+  color: var(--c-muted);
+  border: none;
+  font-weight: 700;
+}
+
+.nav-btn--portal:hover {
+  background: var(--c-bg);
+  color: var(--c-text);
+}
+
+.nav-btn--portal:active {
+  transform: translateY(1px);
+}
 
 .cart-badge {
   display: inline-flex;
