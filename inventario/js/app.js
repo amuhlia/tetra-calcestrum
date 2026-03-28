@@ -8,6 +8,7 @@ const state = {
   scanTimer: null,
   scanCanvas: null,
   scanCtx: null,
+  scanAttempts: 0,
 };
 
 const els = {
@@ -262,8 +263,85 @@ function updateScannerStatus(msg) {
   els.scannerStatus.textContent = msg;
 }
 
+function ensureScanCanvas(width, height) {
+  const safeWidth = Math.max(1, Math.round(width));
+  const safeHeight = Math.max(1, Math.round(height));
+
+  if (!state.scanCanvas) {
+    state.scanCanvas = document.createElement("canvas");
+    state.scanCtx = state.scanCanvas.getContext("2d", { willReadFrequently: true });
+  }
+
+  if (state.scanCanvas.width !== safeWidth || state.scanCanvas.height !== safeHeight) {
+    state.scanCanvas.width = safeWidth;
+    state.scanCanvas.height = safeHeight;
+  }
+}
+
+function getScanRegion(videoWidth, videoHeight, useCenterCrop) {
+  if (!useCenterCrop) {
+    return {
+      sx: 0,
+      sy: 0,
+      sw: videoWidth,
+      sh: videoHeight,
+    };
+  }
+
+  const cropWidth = videoWidth * 0.76;
+  const cropHeight = videoHeight * 0.38;
+
+  return {
+    sx: (videoWidth - cropWidth) / 2,
+    sy: (videoHeight - cropHeight) / 2,
+    sw: cropWidth,
+    sh: cropHeight,
+  };
+}
+
+function captureFrameImageData(video, useCenterCrop) {
+  const region = getScanRegion(video.videoWidth, video.videoHeight, useCenterCrop);
+  const maxDecodeWidth = useCenterCrop ? 1280 : 960;
+  const scale = Math.min(1, maxDecodeWidth / region.sw);
+  const targetWidth = region.sw * scale;
+  const targetHeight = region.sh * scale;
+
+  ensureScanCanvas(targetWidth, targetHeight);
+  state.scanCtx.drawImage(
+    video,
+    region.sx,
+    region.sy,
+    region.sw,
+    region.sh,
+    0,
+    0,
+    state.scanCanvas.width,
+    state.scanCanvas.height
+  );
+
+  return state.scanCtx.getImageData(0, 0, state.scanCanvas.width, state.scanCanvas.height);
+}
+
+async function decodeImageData(imageData) {
+  return window.ZXingWASM.readBarcodes(imageData, {
+    formats: ["AllLinear"],
+    tryHarder: true,
+    tryRotate: true,
+    tryInvert: true,
+    tryDownscale: true,
+    tryDenoise: false,
+    downscaleFactor: 2,
+    downscaleThreshold: 1200,
+    minLineCount: 1,
+    maxNumberOfSymbols: 1,
+    binarizer: "LocalAverage",
+    textMode: "Plain",
+  });
+}
+
 function closeScanner() {
   state.scannerOpen = false;
+  state.scanAttempts = 0;
   els.scannerModal.classList.remove("open");
   els.scannerModal.setAttribute("aria-hidden", "true");
 
@@ -289,18 +367,12 @@ async function scanFrame() {
     return;
   }
 
-  state.scanCanvas.width = video.videoWidth;
-  state.scanCanvas.height = video.videoHeight;
-  state.scanCtx.drawImage(video, 0, 0, state.scanCanvas.width, state.scanCanvas.height);
-
-  const imageData = state.scanCtx.getImageData(0, 0, state.scanCanvas.width, state.scanCanvas.height);
+  state.scanAttempts += 1;
+  const useCenterCrop = state.scanAttempts % 4 !== 0;
+  const imageData = captureFrameImageData(video, useCenterCrop);
 
   try {
-    const barcodes = await window.ZXingWASM.readBarcodes(imageData, {
-      tryHarder: true,
-      maxNumberOfSymbols: 1,
-      formats: ["EAN13", "EAN8", "UPCA", "UPCE", "Code128", "Code39", "ITF", "Codabar"],
-    });
+    const barcodes = await decodeImageData(imageData);
 
     if (barcodes.length > 0 && barcodes[0].text) {
       els.barcodeInput.value = barcodes[0].text;
@@ -308,11 +380,15 @@ async function scanFrame() {
       closeScanner();
       return;
     }
-  } catch (_) {
-    updateScannerStatus("Analizando imagen con zxing-wasm...");
+    if (state.scanAttempts % 6 === 0) {
+      updateScannerStatus("Buscando codigo... acerca un poco mas la camara y evita reflejos.");
+    }
+  } catch (error) {
+    const message = error && error.message ? error.message : "Analizando imagen con zxing-wasm...";
+    updateScannerStatus(message);
   }
 
-  state.scanTimer = setTimeout(scanFrame, 220);
+  state.scanTimer = setTimeout(scanFrame, 160);
 }
 
 async function openScanner() {
@@ -345,15 +421,18 @@ async function openScanner() {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: { ideal: "environment" },
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
       },
       audio: false,
     });
 
     state.stream = stream;
     state.scannerOpen = true;
+    state.scanAttempts = 0;
+
     if (!state.scanCanvas) {
-      state.scanCanvas = document.createElement("canvas");
-      state.scanCtx = state.scanCanvas.getContext("2d", { willReadFrequently: true });
+      ensureScanCanvas(2, 2);
     }
 
     els.scannerVideo.srcObject = stream;
