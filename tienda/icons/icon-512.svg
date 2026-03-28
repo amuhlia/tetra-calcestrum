@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6c63ff"/>
+      <stop offset="100%" stop-color="#ff6584"/>
+    </linearGradient>
+  </defs>
+  <!-- Fondo redondeado -->
+  <rect width="512" height="512" rx="110" fill="url(#bg)"/>
+  <!-- Bolsa de compras estilizada -->
+  <path d="M148 212 L160 374 Q162 394 186 394 L326 394 Q350 394 352 374 L364 212 Z"
+        fill="rgba(255,255,255,0.9)" stroke="none"/>
+  <!-- asa de la bolsa -->
+  <path d="M196 212 Q196 146 256 146 Q316 146 316 212"
+        fill="none" stroke="white" stroke-width="24" stroke-linecap="round"/>
+  <!-- símbolo central -->
+  <text x="256" y="344" font-size="90" text-anchor="middle" fill="#6c63ff" font-family="Arial, sans-serif" font-weight="900">◈</text>
+</svg>

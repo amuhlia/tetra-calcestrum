@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#6c63ff" />
+  <meta name="description" content="NovaMart - Tu tienda virtual favorita con los mejores productos" />
+  <title>NovaMart · Tienda Virtual</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.svg" />
+
+  <!-- Estilos -->
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="header" id="header">
+    <div class="header__inner">
+      <a href="#" class="header__logo" id="logoBtn">
+        <span class="logo-icon">◈</span>
+        <span class="logo-text">NovaMart</span>
+      </a>
+
+      <nav class="header__nav">
+        <button class="nav-btn active" data-view="store">Tienda</button>
+        <button class="nav-btn" data-view="cart">
+          Carrito
+          <span class="cart-badge" id="cartBadge" aria-label="artículos en carrito">0</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ===== MAIN ===== -->
+  <main id="app">
+
+    <!-- ====== VISTA: TIENDA ====== -->
+    <section id="viewStore" class="view active">
+
+      <!-- Hero -->
+      <div class="hero">
+        <div class="hero__content">
+          <h1 class="hero__title">Los mejores productos,<br/><span>al mejor precio</span></h1>
+          <p class="hero__subtitle">Envío rápido · Devoluciones gratuitas · Pago seguro</p>
+          <a href="#products" class="btn btn--primary btn--lg">Ver productos</a>
+        </div>
+        <div class="hero__visual" aria-hidden="true">
+          <div class="hero__circle hero__circle--1"></div>
+          <div class="hero__circle hero__circle--2"></div>
+          <div class="hero__circle hero__circle--3"></div>
+          <div class="hero__icon">🛍️</div>
+        </div>
+      </div>
+
+      <!-- Filtros de categorías -->
+      <div class="categories" id="categories">
+        <div class="categories__inner">
+          <button class="category-btn active" data-cat="all">Todos</button>
+          <button class="category-btn" data-cat="electronics">Electrónica</button>
+          <button class="category-btn" data-cat="clothing">Ropa</button>
+          <button class="category-btn" data-cat="home">Hogar</button>
+          <button class="category-btn" data-cat="sports">Deportes</button>
+          <button class="category-btn" data-cat="beauty">Belleza</button>
+        </div>
+      </div>
+
+      <!-- Grid de productos -->
+      <div class="products-section" id="products">
+        <div class="products-header">
+          <h2 id="productsTitle">Todos los productos</h2>
+          <span class="products-count" id="productsCount"></span>
+        </div>
+        <div class="products-grid" id="productsGrid"></div>
+      </div>
+
+    </section>
+
+    <!-- ====== VISTA: CARRITO ====== -->
+    <section id="viewCart" class="view">
+
+      <div class="cart-container">
+        <h2 class="section-title">Tu carrito</h2>
+
+        <!-- Lista de ítems -->
+        <div id="cartItems" class="cart-items"></div>
+
+        <!-- Estado vacío -->
+        <div id="cartEmpty" class="cart-empty hidden">
+          <div class="cart-empty__icon" aria-hidden="true">🛒</div>
+          <p class="cart-empty__text">Tu carrito está vacío</p>
+          <button class="btn btn--primary" data-view="store" onclick="App.showView('store')">Ir a la tienda</button>
+        </div>
+
+        <!-- Resumen -->
+        <div id="cartSummary" class="cart-summary hidden">
+          <div class="cart-summary__row">
+            <span>Subtotal</span>
+            <span id="summarySubtotal">$0.00</span>
+          </div>
+          <div class="cart-summary__row">
+            <span>Envío</span>
+            <span id="summaryShipping">Gratis</span>
+          </div>
+          <div class="cart-summary__row cart-summary__row--total">
+            <span>Total</span>
+            <span id="summaryTotal">$0.00</span>
+          </div>
+          <button class="btn btn--primary btn--full" id="checkoutBtn">
+            Proceder al pago →
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ====== VISTA: CHECKOUT ====== -->
+    <section id="viewCheckout" class="view">
+
+      <div class="checkout-container">
+        <!-- Stepper -->
+        <div class="stepper" id="stepper">
+          <div class="step active" data-step="1">
+            <div class="step__circle">1</div>
+            <span class="step__label">Envío</span>
+          </div>
+          <div class="step__line"></div>
+          <div class="step" data-step="2">
+            <div class="step__circle">2</div>
+            <span class="step__label">Pago</span>
+          </div>
+          <div class="step__line"></div>
+          <div class="step" data-step="3">
+            <div class="step__circle">3</div>
+            <span class="step__label">Confirmar</span>
+          </div>
+        </div>
+
+        <!-- Paso 1: Datos de envío -->
+        <div class="checkout-step" id="step1">
+          <h2 class="section-title">Datos de envío</h2>
+          <form id="shippingForm" class="checkout-form" novalidate>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="firstName">Nombre *</label>
+                <input type="text" id="firstName" name="firstName" placeholder="Ana" autocomplete="given-name" required />
+                <span class="field-error" id="firstNameError"></span>
+              </div>
+              <div class="form-group">
+                <label for="lastName">Apellido *</label>
+                <input type="text" id="lastName" name="lastName" placeholder="García" autocomplete="family-name" required />
+                <span class="field-error" id="lastNameError"></span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="email">Correo electrónico *</label>
+              <input type="email" id="email" name="email" placeholder="ana@ejemplo.com" autocomplete="email" required />
+              <span class="field-error" id="emailError"></span>
+            </div>
+            <div class="form-group">
+              <label for="phone">Teléfono *</label>
+              <input type="tel" id="phone" name="phone" placeholder="+52 55 1234 5678" autocomplete="tel" required />
+              <span class="field-error" id="phoneError"></span>
+            </div>
+            <div class="form-group">
+              <label for="address">Dirección *</label>
+              <input type="text" id="address" name="address" placeholder="Calle, número, colonia" autocomplete="street-address" required />
+              <span class="field-error" id="addressError"></span>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="city">Ciudad *</label>
+                <input type="text" id="city" name="city" placeholder="Ciudad de México" autocomplete="address-level2" required />
+                <span class="field-error" id="cityError"></span>
+              </div>
+              <div class="form-group">
+                <label for="zip">Código Postal *</label>
+                <input type="text" id="zip" name="zip" placeholder="06600" autocomplete="postal-code" required />
+                <span class="field-error" id="zipError"></span>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn--outline" onclick="App.showView('cart')">← Volver</button>
+              <button type="submit" class="btn btn--primary">Continuar →</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Paso 2: Datos de pago (simulado) -->
+        <div class="checkout-step hidden" id="step2">
+          <h2 class="section-title">Método de pago <span class="badge-sim">SIMULADO</span></h2>
+          <div class="payment-methods">
+            <label class="payment-option active" id="optCard">
+              <input type="radio" name="payMethod" value="card" checked />
+              <span class="pm-icon">💳</span>
+              <span>Tarjeta de crédito/débito</span>
+            </label>
+            <label class="payment-option" id="optPaypal">
+              <input type="radio" name="payMethod" value="paypal" />
+              <span class="pm-icon">🅿️</span>
+              <span>PayPal</span>
+            </label>
+            <label class="payment-option" id="optCash">
+              <input type="radio" name="payMethod" value="cash" />
+              <span class="pm-icon">💵</span>
+              <span>Pago en efectivo (OXXO)</span>
+            </label>
+          </div>
+
+          <!-- Formulario tarjeta (simulado) -->
+          <div id="cardForm" class="card-form">
+            <div class="form-group">
+              <label for="cardHolder">Nombre en la tarjeta *</label>
+              <input type="text" id="cardHolder" placeholder="ANA GARCÍA" autocomplete="cc-name" />
+              <span class="field-error" id="cardHolderError"></span>
+            </div>
+            <div class="form-group">
+              <label for="cardNumber">Número de tarjeta *</label>
+              <div class="card-input-wrap">
+                <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19" autocomplete="cc-number" />
+                <span class="card-type-icon" id="cardTypeIcon">💳</span>
+              </div>
+              <span class="field-error" id="cardNumberError"></span>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="cardExpiry">Vencimiento *</label>
+                <input type="text" id="cardExpiry" placeholder="MM/AA" maxlength="5" autocomplete="cc-exp" />
+                <span class="field-error" id="cardExpiryError"></span>
+              </div>
+              <div class="form-group">
+                <label for="cardCvv">CVV *</label>
+                <input type="text" id="cardCvv" placeholder="123" maxlength="4" autocomplete="off" />
+                <span class="field-error" id="cardCvvError"></span>
+              </div>
+            </div>
+            <div class="sim-notice">
+              🔒 Entorno simulado — No ingreses datos reales de tarjeta
+            </div>
+          </div>
+
+          <!-- PayPal simulado -->
+          <div id="paypalForm" class="paypal-form hidden">
+            <div class="paypal-mock">
+              <div class="paypal-logo">PayPal</div>
+              <p>Serás redirigido a PayPal para completar el pago.</p>
+              <p class="sim-notice">🔒 Entorno simulado</p>
+            </div>
+          </div>
+
+          <!-- OXXO simulado -->
+          <div id="cashForm" class="cash-form hidden">
+            <div class="oxxo-mock">
+              <p>Recibirás una referencia de pago por correo electrónico.</p>
+              <div class="oxxo-ref">Ref: <strong id="oxxoRef">NOVA-XXXX-XXXX</strong></div>
+              <p class="sim-notice">🔒 Entorno simulado</p>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn--outline" id="backToStep1">← Volver</button>
+            <button type="button" class="btn btn--primary" id="payBtn">Pagar ahora →</button>
+          </div>
+        </div>
+
+        <!-- Paso 3: Confirmación -->
+        <div class="checkout-step hidden" id="step3">
+          <div class="order-summary">
+            <h2 class="section-title">Resumen del pedido</h2>
+            <div id="orderItems" class="order-items"></div>
+            <div class="order-totals">
+              <div class="order-totals__row">
+                <span>Subtotal</span><span id="orderSubtotal"></span>
+              </div>
+              <div class="order-totals__row">
+                <span>Envío</span><span>Gratis</span>
+              </div>
+              <div class="order-totals__row order-totals__row--bold">
+                <span>Total</span><span id="orderTotal"></span>
+              </div>
+            </div>
+            <div class="shipping-summary" id="shippingSummary"></div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn--outline" id="backToStep2">← Volver</button>
+            <button type="button" class="btn btn--primary btn--full" id="confirmBtn">
+              ✓ Confirmar pedido
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /checkout-container -->
+    </section>
+
+    <!-- ====== VISTA: ÉXITO ====== -->
+    <section id="viewSuccess" class="view">
+      <div class="success-container">
+        <div class="success-icon" aria-hidden="true">✅</div>
+        <h2 class="success-title">¡Pedido confirmado!</h2>
+        <p class="success-msg">Gracias por tu compra. Recibirás un correo de confirmación en breve.</p>
+        <div class="success-order-id">
+          Pedido #<strong id="successOrderId"></strong>
+        </div>
+        <div class="success-eta">
+          <span>📦</span> Entrega estimada: <strong id="successEta"></strong>
+        </div>
+        <button class="btn btn--primary btn--lg" onclick="App.goHome()">
+          Seguir comprando
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===== TOAST ===== -->
+  <div id="toast" class="toast" role="alert" aria-live="polite"></div>
+
+  <!-- ===== MODAL PRODUCTO ===== -->
+  <div id="productModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal__backdrop" id="modalBackdrop"></div>
+    <div class="modal__content">
+      <button class="modal__close" id="modalClose" aria-label="Cerrar">✕</button>
+      <div class="modal__img-wrap">
+        <div class="modal__img" id="modalImg" aria-hidden="true"></div>
+      </div>
+      <div class="modal__info">
+        <span class="modal__category" id="modalCategory"></span>
+        <h2 class="modal__title" id="modalTitle"></h2>
+        <div class="modal__stars" id="modalStars" aria-label="calificación"></div>
+        <p class="modal__description" id="modalDescription"></p>
+        <div class="modal__price" id="modalPrice"></div>
+        <div class="modal__qty">
+          <button class="qty-btn" id="modalQtyMinus" aria-label="Reducir cantidad">−</button>
+          <span class="qty-value" id="modalQty">1</span>
+          <button class="qty-btn" id="modalQtyPlus" aria-label="Aumentar cantidad">+</button>
+        </div>
+        <button class="btn btn--primary btn--full" id="modalAddBtn">Agregar al carrito</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/products.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/checkout.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

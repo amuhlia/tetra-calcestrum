@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Portal de acceso a aplicaciones" />
+  <title>Portal de Apps</title>
+  <style>
+    :root {
+      --bg-1: #0f172a;
+      --bg-2: #1e293b;
+      --card: #0b1220;
+      --line: #334155;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --brand: #22d3ee;
+      --brand-2: #38bdf8;
+      --ok: #22c55e;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 10% 10%, #1d4ed8 0%, transparent 30%),
+        radial-gradient(circle at 90% 80%, #0ea5e9 0%, transparent 28%),
+        linear-gradient(135deg, var(--bg-1), var(--bg-2));
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .panel {
+      width: min(760px, 100%);
+      background: color-mix(in srgb, var(--card) 92%, black 8%);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, .35);
+      backdrop-filter: blur(6px);
+    }
+
+    .tag {
+      display: inline-block;
+      font-size: 12px;
+      color: #0b1220;
+      background: var(--brand);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      line-height: 1.1;
+    }
+
+    .title-2 {
+      margin: 0 0 12px;
+      font-size: clamp(1rem, 2.5vw, 1.25rem);
+      line-height: 1.45;
+      color: #cbd5e1;
+      font-weight: 600;
+    }
+
+    p {
+      margin: 12px 0 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .grid {
+      margin-top: 22px;
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .app-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      background: #0b1324;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .app-card h2 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    .app-card p {
+      margin: 0;
+      font-size: .94rem;
+    }
+
+    .btn {
+      margin-top: auto;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 700;
+      border: 1px solid transparent;
+      transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+
+    .btn-primary {
+      background: linear-gradient(90deg, var(--brand), var(--brand-2));
+      color: #042032;
+      box-shadow: 0 8px 20px rgba(34, 211, 238, .28);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border-color: #475569;
+      color: var(--text);
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: .82rem;
+      color: #86efac;
+      font-weight: 600;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--ok);
+      box-shadow: 0 0 0 5px rgba(34, 197, 94, .15);
+    }
+
+    .contact-fab {
+      position: static;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #4c649b;
+      background: #1a2a4c;
+      color: var(--text);
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-weight: 700;
+      font-size: .9rem;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, .35);
+      z-index: 120;
+    }
+
+    .panel-footer {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .panel-footer .status {
+      margin: 0;
+    }
+
+    .contact-modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 140;
+    }
+
+    .contact-modal.show {
+      display: flex;
+    }
+
+    .contact-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, .55);
+      backdrop-filter: blur(2px);
+    }
+
+    .contact-card {
+      position: relative;
+      width: min(420px, 100%);
+      background: #0f172a;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, .4);
+    }
+
+    .contact-title {
+      margin: 0 0 10px;
+      color: #b6f0ff;
+      font-size: 1.1rem;
+    }
+
+    .contact-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 10px;
+      color: #d7e3ff;
+      line-height: 1.5;
+    }
+
+    .contact-list strong {
+      color: #8ad4ff;
+    }
+
+    .contact-link {
+      color: #d7e3ff;
+      text-decoration: none;
+      border-bottom: 1px dashed #7dd3fc;
+      padding-bottom: 1px;
+    }
+
+    .contact-link:hover {
+      color: #7dd3fc;
+    }
+
+    .contact-close {
+      margin-top: 14px;
+      border: 1px solid #4d6599;
+      border-radius: 10px;
+      background: #1f2f58;
+      color: var(--text);
+      padding: 9px 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <main class="panel">
+    <span class="tag">Ventor Co.</span>
+    <h2 class="title-2">Somos una empresa que quiere materializar tus ideas en la app que siempre has imaginado.<br />Te cotizamos tu MVP (Producto Mínimo Viable.) desde $20mil pesos +IVA.</h2>
+    <h2>Selecciona a que demo deseas entrar</h2>
+    <p>Desde aquí puedes abrir la tienda virtual, solicitar un servicio o entrar a nuestro juego retro.</p>
+
+    <div class="grid">
+      <article class="app-card">
+        <h2>Tienda Virtual</h2>
+        <p>Catálogo, carrito de compras y checkout.</p>
+        <a class="btn btn-primary" href="./tienda/">Entrar a la tienda</a>
+      </article>
+
+
+      <article class="app-card">
+        <h2>Servicio a Domicilio</h2>
+        <p>Solicita un viaje, un doctor, una cita o un encuentro.</p>
+        <a class="btn btn-secondary" href="./servicio/">Solicitar un servicio</a>
+      </article>
+
+      <article class="app-card">
+        <h2>Juego Retro</h2>
+        <p>Juega Tetris estilo 1990 directamente en el navegador.</p>
+        <a class="btn btn-secondary" href="./otra-app/">Entrar a Tetris 1990</a>
+      </article>      
+    </div>
+
+    <div class="panel-footer">
+      <p class="status"><span class="dot"></span> Portal activo</p>
+      <button class="contact-fab" id="contactBtn" type="button">Contacto</button>
+    </div>
+  </main>
+
+  <div class="contact-modal" id="contactModal" aria-hidden="true">
+    <div class="contact-backdrop" id="contactBackdrop"></div>
+    <div class="contact-card" role="dialog" aria-modal="true" aria-labelledby="contactTitle">
+      <h3 class="contact-title" id="contactTitle">Datos de contacto</h3>
+      <ul class="contact-list">
+        <li><strong>Tel/Whats:</strong> <a class="contact-link" href="https://wa.me/525516506720?text=Quiero%20la%20app%20que%20siempre%20he%20imaginado" target="_blank" rel="noopener noreferrer">5516506720</a></li>
+        <li><strong>Mail:</strong> <a class="contact-link" href="mailto:amuhlia@hotmail.com">amuhlia@hotmail.com</a></li>
+      </ul>
+      <button class="contact-close" id="contactClose" type="button">Cerrar</button>
+    </div>
+  </div>
+
+  <script>
+    const contactBtn = document.getElementById("contactBtn");
+    const contactModal = document.getElementById("contactModal");
+    const contactBackdrop = document.getElementById("contactBackdrop");
+    const contactClose = document.getElementById("contactClose");
+
+    function openContact() {
+      contactModal.classList.add("show");
+      contactModal.setAttribute("aria-hidden", "false");
+      contactClose.focus();
+    }
+
+    function closeContact() {
+      contactModal.classList.remove("show");
+      contactModal.setAttribute("aria-hidden", "true");
+      contactBtn.focus();
+    }
+
+    contactBtn.addEventListener("click", openContact);
+    contactClose.addEventListener("click", closeContact);
+    contactBackdrop.addEventListener("click", closeContact);
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && contactModal.classList.contains("show")) {
+        closeContact();
+      }
+    });
+  </script>
+</body>
+</html>

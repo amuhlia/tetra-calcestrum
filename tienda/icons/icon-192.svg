@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6c63ff"/>
+      <stop offset="100%" stop-color="#ff6584"/>
+    </linearGradient>
+  </defs>
+  <!-- Fondo redondeado -->
+  <rect width="192" height="192" rx="40" fill="url(#bg)"/>
+  <!-- Bolsa de compras estilizada -->
+  <path d="M56 80 L60 140 Q61 148 70 148 L122 148 Q131 148 132 140 L136 80 Z"
+        fill="rgba(255,255,255,0.9)" stroke="none"/>
+  <!-- asa de la bolsa -->
+  <path d="M75 80 Q75 55 96 55 Q117 55 117 80"
+        fill="none" stroke="white" stroke-width="9" stroke-linecap="round"/>
+  <!-- símbolo de destello / precio -->
+  <text x="96" y="128" font-size="34" text-anchor="middle" fill="#6c63ff" font-family="Arial, sans-serif" font-weight="900">◈</text>
+</svg>
