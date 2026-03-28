@@ -5,8 +5,9 @@ const state = {
   searchTerm: "",
   stream: null,
   scannerOpen: false,
-  detector: null,
   scanTimer: null,
+  scanCanvas: null,
+  scanCtx: null,
 };
 
 const els = {
@@ -280,21 +281,38 @@ function closeScanner() {
 }
 
 async function scanFrame() {
-  if (!state.scannerOpen || !state.detector) return;
+  if (!state.scannerOpen || !state.scanCanvas || !state.scanCtx) return;
+
+  const video = els.scannerVideo;
+  if (!video.videoWidth || !video.videoHeight || video.readyState < 2) {
+    state.scanTimer = setTimeout(scanFrame, 180);
+    return;
+  }
+
+  state.scanCanvas.width = video.videoWidth;
+  state.scanCanvas.height = video.videoHeight;
+  state.scanCtx.drawImage(video, 0, 0, state.scanCanvas.width, state.scanCanvas.height);
+
+  const imageData = state.scanCtx.getImageData(0, 0, state.scanCanvas.width, state.scanCanvas.height);
 
   try {
-    const barcodes = await state.detector.detect(els.scannerVideo);
-    if (barcodes.length > 0 && barcodes[0].rawValue) {
-      els.barcodeInput.value = barcodes[0].rawValue;
-      updateScannerStatus(`Codigo detectado: ${barcodes[0].rawValue}`);
+    const barcodes = await window.ZXingWASM.readBarcodes(imageData, {
+      tryHarder: true,
+      maxNumberOfSymbols: 1,
+      formats: ["EAN13", "EAN8", "UPCA", "UPCE", "Code128", "Code39", "ITF", "Codabar"],
+    });
+
+    if (barcodes.length > 0 && barcodes[0].text) {
+      els.barcodeInput.value = barcodes[0].text;
+      updateScannerStatus(`Codigo detectado: ${barcodes[0].text}`);
       closeScanner();
       return;
     }
   } catch (_) {
-    updateScannerStatus("Analizando imagen...");
+    updateScannerStatus("Analizando imagen con zxing-wasm...");
   }
 
-  state.scanTimer = setTimeout(scanFrame, 260);
+  state.scanTimer = setTimeout(scanFrame, 220);
 }
 
 async function openScanner() {
@@ -303,24 +321,24 @@ async function openScanner() {
     return;
   }
 
-  if (!("BarcodeDetector" in window)) {
-    alert("Tu navegador no soporta BarcodeDetector. Captura el codigo manualmente.");
+  if (!window.ZXingWASM || typeof window.ZXingWASM.readBarcodes !== "function") {
+    alert("No se pudo cargar zxing-wasm. Verifica conexion y recarga la pagina.");
     return;
   }
 
   try {
-    if (!state.detector) {
-      state.detector = new BarcodeDetector({
-        formats: [
-          "ean_13",
-          "ean_8",
-          "upc_a",
-          "upc_e",
-          "code_128",
-          "code_39",
-          "itf",
-          "codabar",
-        ],
+    if (typeof window.ZXingWASM.prepareZXingModule === "function") {
+      updateScannerStatus("Inicializando motor de lectura...");
+      await window.ZXingWASM.prepareZXingModule({
+        overrides: {
+          locateFile: (path, prefix) => {
+            if (path.endsWith(".wasm")) {
+              return "./vendor/zxing-wasm/zxing_reader.wasm";
+            }
+            return prefix + path;
+          },
+        },
+        fireImmediately: true,
       });
     }
 
@@ -333,6 +351,10 @@ async function openScanner() {
 
     state.stream = stream;
     state.scannerOpen = true;
+    if (!state.scanCanvas) {
+      state.scanCanvas = document.createElement("canvas");
+      state.scanCtx = state.scanCanvas.getContext("2d", { willReadFrequently: true });
+    }
 
     els.scannerVideo.srcObject = stream;
     await els.scannerVideo.play();
