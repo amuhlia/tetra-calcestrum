@@ -249,6 +249,19 @@
       color: #7dd3fc;
     }
 
+    .contact-copy-msg {
+      margin: 8px 0 0;
+      min-height: 18px;
+      color: #7dd3fc;
+      font-size: .9rem;
+      opacity: 0;
+      transition: opacity .18s ease;
+    }
+
+    .contact-copy-msg.show {
+      opacity: 1;
+    }
+
     .contact-close {
       margin-top: 14px;
       border: 1px solid #4d6599;
@@ -313,8 +326,9 @@
       <h3 class="contact-title" id="contactTitle">Datos de contacto</h3>
       <ul class="contact-list">
         <li><strong>Tel/Whats:</strong> <a class="contact-link" href="https://wa.me/525516506720?text=Quiero%20la%20app%20que%20siempre%20he%20imaginado" target="_blank" rel="noopener noreferrer">5516506720</a></li>
-        <li class="contact-mail-row" id="contactMailRow"><strong>Mail:</strong> <a class="contact-link" id="contactMailLink" href="mailto:amuhlia@hotmail.com">amuhlia@hotmail.com</a></li>
+        <li class="contact-mail-row" id="contactMailRow" role="button" tabindex="0" aria-label="Copiar correo"><strong>Mail:</strong> <a class="contact-link" id="contactMailLink" href="mailto:amuhlia@hotmail.com">amuhlia@hotmail.com</a></li>
       </ul>
+      <p class="contact-copy-msg" id="contactCopyMsg" aria-live="polite"></p>
       <button class="contact-close" id="contactClose" type="button">Cerrar</button>
     </div>
   </div>
@@ -326,6 +340,9 @@
     const contactClose = document.getElementById("contactClose");
     const contactMailRow = document.getElementById("contactMailRow");
     const contactMailLink = document.getElementById("contactMailLink");
+    const contactCopyMsg = document.getElementById("contactCopyMsg");
+    const contactEmail = "amuhlia@hotmail.com";
+    let copyMsgTimeout = null;
 
     function openContact() {
       contactModal.classList.add("show");
@@ -343,14 +360,48 @@
     contactClose.addEventListener("click", closeContact);
     contactBackdrop.addEventListener("click", closeContact);
 
+    function showCopiedMessage() {
+      contactCopyMsg.textContent = "Copiado";
+      contactCopyMsg.classList.add("show");
+      clearTimeout(copyMsgTimeout);
+      copyMsgTimeout = setTimeout(() => {
+        contactCopyMsg.classList.remove("show");
+        contactCopyMsg.textContent = "";
+      }, 1500);
+    }
+
+    async function copyMailToClipboard() {
+      try {
+        await navigator.clipboard.writeText(contactEmail);
+      } catch (_) {
+        const helper = document.createElement("textarea");
+        helper.value = contactEmail;
+        helper.setAttribute("readonly", "");
+        helper.style.position = "absolute";
+        helper.style.left = "-9999px";
+        document.body.appendChild(helper);
+        helper.select();
+        document.execCommand("copy");
+        document.body.removeChild(helper);
+      }
+      showCopiedMessage();
+    }
+
     contactMailLink.addEventListener("click", (e) => {
       e.preventDefault();
-      window.location.href = contactMailLink.href;
+      copyMailToClipboard();
     });
 
     contactMailRow.addEventListener("click", (e) => {
       if (e.target.closest("a")) return;
-      window.location.href = contactMailLink.href;
+      copyMailToClipboard();
+    });
+
+    contactMailRow.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        copyMailToClipboard();
+      }
     });
 
     document.addEventListener("keydown", (e) => {
