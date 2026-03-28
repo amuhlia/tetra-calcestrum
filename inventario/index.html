@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Inventario movil con captura por tipo y lector de codigo de barras" />
+  <meta name="theme-color" content="#0a7b83" />
+  <title>Inventario Movil</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./css/styles.css" />
+</head>
+<body>
+  <div class="noise" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">Control de stock</p>
+      <h1>Inventario por producto</h1>
+    </div>
+    <button class="ghost-btn" type="button" id="goPortalBtn">Volver al portal</button>
+  </header>
+
+  <main class="layout">
+    <section class="card card-form">
+      <h2>Nuevo registro</h2>
+      <p class="hint">Captura tipo, producto, cantidad y codigo de barras.</p>
+
+      <form id="inventoryForm" novalidate>
+        <label class="field">
+          <span>Tipo de producto</span>
+          <select id="productType" required>
+            <option value="">Selecciona un tipo</option>
+            <option value="Abarrotes">Abarrotes</option>
+            <option value="Limpieza">Limpieza</option>
+            <option value="Bebidas">Bebidas</option>
+            <option value="Electronica">Electronica</option>
+            <option value="Ropa">Ropa</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </label>
+
+        <label class="field hidden" id="customTypeWrap">
+          <span>Tipo personalizado</span>
+          <input id="customType" type="text" placeholder="Ej. Refacciones" maxlength="40" />
+        </label>
+
+        <label class="field">
+          <span>Nombre del producto</span>
+          <input id="productName" type="text" required placeholder="Ej. Botella de agua 1L" maxlength="80" />
+        </label>
+
+        <div class="field field-barcode">
+          <label for="barcodeInput">
+            <span>Codigo de barras</span>
+          </label>
+          <div class="barcode-row">
+            <input id="barcodeInput" type="text" required inputmode="numeric" placeholder="Escanea o captura manual" maxlength="32" />
+            <button id="scanBtn" type="button" class="scan-btn">Escanear</button>
+          </div>
+        </div>
+
+        <div class="split">
+          <label class="field">
+            <span>Cantidad</span>
+            <input id="quantity" type="number" min="1" step="1" value="1" required />
+          </label>
+
+          <label class="field">
+            <span>Ubicacion</span>
+            <input id="location" type="text" placeholder="Ej. Pasillo 3" maxlength="40" />
+          </label>
+        </div>
+
+        <button class="primary-btn" type="submit">Guardar registro</button>
+      </form>
+    </section>
+
+    <section class="card card-dashboard">
+      <div class="dashboard-head">
+        <div>
+          <h2>Resumen de inventario</h2>
+          <p class="hint">Agrupado por tipo de producto.</p>
+        </div>
+        <button id="clearBtn" class="danger-btn" type="button">Vaciar todo</button>
+      </div>
+
+      <div id="summaryGrid" class="summary-grid"></div>
+
+      <div class="records-head">
+        <h3>Registros</h3>
+        <span id="recordCount" class="counter">0 items</span>
+      </div>
+      <div class="records-tools">
+        <input id="searchInput" type="search" placeholder="Buscar por codigo, nombre o tipo" aria-label="Buscar registros" />
+        <button id="exportCsvBtn" class="ghost-btn" type="button">Exportar CSV</button>
+      </div>
+      <div id="recordsList" class="records-list"></div>
+    </section>
+  </main>
+
+  <section id="scannerModal" class="scanner-modal" aria-hidden="true">
+    <div class="scanner-card" role="dialog" aria-modal="true" aria-labelledby="scannerTitle">
+      <div class="scanner-top">
+        <h3 id="scannerTitle">Escaner de codigo</h3>
+        <button id="closeScannerBtn" type="button" class="ghost-btn small">Cerrar</button>
+      </div>
+      <p id="scannerStatus" class="scanner-status">Listo para iniciar camara.</p>
+      <div class="video-wrap">
+        <video id="scannerVideo" playsinline></video>
+        <div class="scan-frame" aria-hidden="true"></div>
+      </div>
+      <p class="scanner-help">Enfoca el codigo dentro del recuadro. Si tu navegador no soporta escaneo, captura el codigo manualmente.</p>
+    </div>
+  </section>
+
+  <script src="./js/app.js"></script>
+</body>
+</html>
