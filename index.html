@@ -241,6 +241,14 @@
       color: #7dd3fc;
     }
 
+    .contact-mail-row {
+      cursor: pointer;
+    }
+
+    .contact-mail-row:hover .contact-link {
+      color: #7dd3fc;
+    }
+
     .contact-close {
       margin-top: 14px;
       border: 1px solid #4d6599;
@@ -305,7 +313,7 @@
       <h3 class="contact-title" id="contactTitle">Datos de contacto</h3>
       <ul class="contact-list">
         <li><strong>Tel/Whats:</strong> <a class="contact-link" href="https://wa.me/525516506720?text=Quiero%20la%20app%20que%20siempre%20he%20imaginado" target="_blank" rel="noopener noreferrer">5516506720</a></li>
-        <li><strong>Mail:</strong> <a class="contact-link" href="mailto:amuhlia@hotmail.com">amuhlia@hotmail.com</a></li>
+        <li class="contact-mail-row" id="contactMailRow"><strong>Mail:</strong> <a class="contact-link" id="contactMailLink" href="mailto:amuhlia@hotmail.com">amuhlia@hotmail.com</a></li>
       </ul>
       <button class="contact-close" id="contactClose" type="button">Cerrar</button>
     </div>
@@ -316,6 +324,8 @@
     const contactModal = document.getElementById("contactModal");
     const contactBackdrop = document.getElementById("contactBackdrop");
     const contactClose = document.getElementById("contactClose");
+    const contactMailRow = document.getElementById("contactMailRow");
+    const contactMailLink = document.getElementById("contactMailLink");
 
     function openContact() {
       contactModal.classList.add("show");
@@ -332,6 +342,16 @@
     contactBtn.addEventListener("click", openContact);
     contactClose.addEventListener("click", closeContact);
     contactBackdrop.addEventListener("click", closeContact);
+
+    contactMailLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      window.location.href = contactMailLink.href;
+    });
+
+    contactMailRow.addEventListener("click", (e) => {
+      if (e.target.closest("a")) return;
+      window.location.href = contactMailLink.href;
+    });
 
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && contactModal.classList.contains("show")) {
