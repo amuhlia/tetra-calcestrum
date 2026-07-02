@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Hipódromo Virtual</title>
+  <!-- Include anime.js for animations -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
   <style>
     :root {
       --green:   #1a6b2f;
@@ -173,7 +175,6 @@
       color: var(--text); border-radius: 6px; padding: 6px 10px; font-size: .9rem;
     }
     .bet-amount-input:focus { outline: none; border-color: var(--gold); }
-
     .btn-bet {
       background: var(--green); color: #fff; border: none;
       border-radius: 6px; padding: 8px 14px; font-weight: bold;
@@ -248,7 +249,7 @@
     .btn-new-race:hover { background: #27ae60; }
 
     /* ── Scrollable table container ── */
-    .table-wrap { max-height: 220px; overflow-y: auto; }
+    .table-wrap { max-height: 350px; overflow-y: auto; }
     .table-wrap::-webkit-scrollbar { width: 4px; }
     .table-wrap::-webkit-scrollbar-track { background: transparent; }
     .table-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
@@ -256,7 +257,7 @@
 </head>
 <body>
 
-  <a class="back-btn" href="../">&#8592; Portal</a>
+  <a class="back-btn" href="../?_cb=1783030550">&#8592; Portal</a>
 
   <header>
     <h1>🏇 Hipódromo Virtual</h1>
@@ -271,7 +272,7 @@
         <strong id="raceName">CARRERA Nº 1</strong>
         <span id="lapsLabel">Pista: 600 m</span>
       </div>
-      <canvas id="track" height="220"></canvas>
+      <canvas id="track" height="350"></canvas>
       <div class="race-status" id="raceStatus">
         <div class="dot"></div>
         <span id="raceStatusText">Esperando apuestas…</span>
@@ -355,9 +356,9 @@
   </div><!-- /main-wrap -->
 
   <script>
-  /* ══════════════════════════════════════════════
+  /* ════════════════════════════════════════════════
      DATA
-  ══════════════════════════════════════════════ */
+  ═════════════════════════════════════════════════ */
   const HORSES = [
     { id: 0, name: 'Rayo del Norte', emoji: '🦄', color: '#e74c3c', odds: 2.5,  speed: 0 },
     { id: 1, name: 'Ventisca Negra', emoji: '🐴', color: '#2980b9', odds: 3.0,  speed: 0 },
@@ -366,9 +367,9 @@
     { id: 4, name: 'Flecha Dorada',  emoji: '🐴', color: '#27ae60', odds: 7.0,  speed: 0 },
   ];
 
-  /* ══════════════════════════════════════════════
+  /* ════════════════════════════════════════════════
      STATE
-  ══════════════════════════════════════════════ */
+  ═════════════════════════════════════════════════ */
   let wallet        = 0;
   let bets          = [];           // [{ horseId, amount }]
   let raceNum       = 1;
@@ -379,11 +380,15 @@
   // Race positions (0–1 progress)
   let positions     = HORSES.map(() => 0);
   let finishOrder   = [];           // horse ids in finish order
-  let animId        = null;
+  let horseAnimations = [];         // Store anime.js animations
 
-  /* ══════════════════════════════════════════════
+  // Sprite sheet animation
+  let horseFrame = HORSES.map(() => 0);              // Current frame for each horse
+  let lastFrameTime = HORSES.map(() => 0);           // Last frame update time for each horse
+
+  /* ════════════════════════════════════════════════
      DOM REFS
-  ══════════════════════════════════════════════ */
+  ═════════════════════════════════════════════════ */
   const canvas        = document.getElementById('track');
   const ctx           = canvas.getContext('2d');
   const walletDisplay = document.getElementById('walletDisplay');
@@ -404,9 +409,31 @@
   const btnNewRace    = document.getElementById('btnNewRace');
   const horsePickList = document.getElementById('horsePickList');
 
-  /* ══════════════════════════════════════════════
+  /* ════════════════════════════════════════════════
+     IMAGE LOADING
+  ═════════════════════════════════════════════════ */
+  const horseStaticImage = new Image();
+  horseStaticImage.src = './images/caballo.png?t=' + Date.now();
+  horseStaticImage.onerror = () => console.error('Failed to load static horse image:', horseStaticImage.src);
+  const horseSpriteImage = new Image();
+  horseSpriteImage.src = './images/caballo-sprite.png?t=' + Date.now();
+  horseSpriteImage.onerror = () => console.error('Failed to load sprite horse image:', horseSpriteImage.src);
+  let horseFrameWidth = 0;
+  let horseFrameCount = 8;
+  horseSpriteImage.onload = () => {
+    console.log('Sprite horse image loaded:', horseSpriteImage.naturalWidth, 'x', horseSpriteImage.naturalHeight);
+    horseFrameWidth = horseSpriteImage.naturalWidth / horseFrameCount;
+    console.log('Frame width set to:', horseFrameWidth);
+  };
+  horseStaticImage.onload = () => {
+    console.log('Static horse image loaded:', horseStaticImage.naturalWidth, 'x', horseStaticImage.naturalHeight);
+    // Redraw to ensure image is displayed once loaded
+    drawTrack();
+  };
+
+  /* ════════════════════════════════════════════════
      AUDIO
-  ══════════════════════════════════════════════ */
+  ═════════════════════════════════════════════════ */
   let audioCtx = null;
   function ac() {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -428,10 +455,10 @@
   function playFinish()   { [523,659,784,1047].forEach((f,i) => setTimeout(()=>tone(f,.25,'triangle',.15), i*120)); }
   function playHoofbeat() { if (Math.random() > .85) tone(80 + Math.random()*40, .04, 'sawtooth', .04); }
 
-  /* ══════════════════════════════════════════════
+  /* ════════════════════════════════════════════════
      CANVAS / TRACK
-  ══════════════════════════════════════════════ */
-  const TRACK_H    = 220;
+  ═════════════════════════════════════════════════ */
+  const TRACK_H    = 350;
   const LANE_H     = 36;
   const TRACK_PAD  = 30; // left/right margin
   const FINISH_PAD = 50;
@@ -510,39 +537,104 @@
       ctx.font = '10px sans-serif';
       ctx.fillText(`${idx + 1}`, TRACK_PAD - 18, centerY + 3);
 
-      // Horse body (simple silhouette rectangle + head circle)
-      ctx.fillStyle = h.color;
-      ctx.globalAlpha = 0.92;
+      // Determine if this horse has finished
+      const isFinished = finishOrder.includes(h.id);
 
-      // Body
-      ctx.beginPath();
-      ctx.roundRect(horseX - 14, centerY - 7, 22, 10, 3);
-      ctx.fill();
+      // Dibujar imagen del caballo según su estado:
+      // CASO 1: Salida (antes de comenzar) o cuando no hay carrera
+      if (!racing && horseStaticImage.complete && horseStaticImage.naturalWidth !== 0) {
+        // Mostrar caballo.png (estático) - ESTADO DE SALIDA
+        const desiredHeight = LANE_H * 0.9;
+        const imgWidth = horseStaticImage.naturalWidth;
+        const imgHeight = horseStaticImage.naturalHeight;
+        const aspect = imgWidth / imgHeight;
+        const desiredWidth = desiredHeight * aspect;
 
-      // Head
-      ctx.beginPath();
-      ctx.arc(horseX + 10, centerY - 5, 6, 0, Math.PI * 2);
-      ctx.fill();
+        const drawX = horseX - desiredWidth / 2;
+        const drawY = centerY - desiredHeight / 2;
 
-      // Legs (animated)
-      const legPhase = positions[idx] * 60;
-      ctx.strokeStyle = h.color;
-      ctx.lineWidth = 2;
-      for (let l = 0; l < 4; l++) {
-        const lx = horseX - 10 + l * 6;
-        const swing = Math.sin(legPhase + l * 1.2) * 5;
-        ctx.beginPath();
-        ctx.moveTo(lx, centerY + 3);
-        ctx.lineTo(lx + swing, centerY + 11);
-        ctx.stroke();
+        ctx.drawImage(
+          horseStaticImage,
+          0, 0,
+          imgWidth, imgHeight,
+          drawX, drawY,
+          desiredWidth, desiredHeight
+        );
       }
+      // CASO 2: Llegada (después de terminar la carrera)
+      else if (isFinished && horseStaticImage.complete && horseStaticImage.naturalWidth !== 0) {
+        // Mostrar caballo.png (estático) - ESTADO DE LLEGADA/META
+        const desiredHeight = LANE_H * 0.9;
+        const imgWidth = horseStaticImage.naturalWidth;
+        const imgHeight = horseStaticImage.naturalHeight;
+        const aspect = imgWidth / imgHeight;
+        const desiredWidth = desiredHeight * aspect;
 
-      ctx.globalAlpha = 1;
+        const drawX = horseX - desiredWidth / 2;
+        const drawY = centerY - desiredHeight / 2;
 
-      // Jockey number badge
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 9px sans-serif';
-      ctx.fillText(`${idx + 1}`, horseX - 6, centerY + 1);
+        ctx.drawImage(
+          horseStaticImage,
+          0, 0,
+          imgWidth, imgHeight,
+          drawX, drawY,
+          desiredWidth, desiredHeight
+        );
+      }
+      // CASO 3: Carrera en progreso y el caballo NO ha terminado
+      else if (racing && !isFinished && horseSpriteImage.complete && horseSpriteImage.naturalWidth !== 0 && horseFrameWidth > 0) {
+        // Mostrar caballo-sprite.png (animado) - SOLO DURANTE LA CARRERA Y ANTES DE TERMINAR
+        const desiredHeight = LANE_H * 0.9;
+        const frameWidth = horseFrameWidth;
+        const imgHeight = horseSpriteImage.naturalHeight;
+        const aspect = frameWidth / imgHeight;
+        const desiredWidth = desiredHeight * aspect;
+
+        const drawX = horseX - desiredWidth / 2;
+        const drawY = centerY - desiredHeight / 2;
+
+        const sourceX = horseFrame[idx] * horseFrameWidth;
+        const sourceY = 0;
+
+        ctx.drawImage(
+          horseSpriteImage,
+          sourceX, sourceY,
+          horseFrameWidth, horseSpriteImage.naturalHeight,
+          drawX, drawY,
+          desiredWidth, desiredHeight
+        );
+      }
+      // CASO 4: FALLBACK - Dibujo vectorial de respaldo (solo si falla la carga de las imágenes)
+      else {
+        // CUERPO DEL CABALLO (silhueta simple) - SOLO SI AMBAS IMÁGENES FALLAN
+        ctx.fillStyle = h.color;
+        ctx.globalAlpha = 0.92;
+
+        // Cuerpo
+        ctx.beginPath();
+        ctx.roundRect(horseX - 14, centerY - 7, 22, 10, 3);
+        ctx.fill();
+
+        // Cabeza
+        ctx.beginPath();
+        ctx.arc(horseX + 10, centerY - 5, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Patas (animadas con movimiento de marcha)
+        const legPhase = positions[idx] * 60;
+        ctx.strokeStyle = h.color;
+        ctx.lineWidth = 2;
+        for (let l = 0; l < 4; l++) {
+          const lx = horseX - 10 + l * 6;
+          const swing = Math.sin(legPhase + l * 1.2) * 5;
+          ctx.beginPath();
+          ctx.moveTo(lx, centerY + 3);
+          ctx.lineTo(lx + swing, centerY + 11);
+          ctx.stroke();
+        }
+
+        ctx.globalAlpha = 1;
+      }
     });
 
     // Finish order badges
@@ -558,9 +650,9 @@
 
   drawTrack();
 
-  /* ══════════════════════════════════════════════
+  /* ════════════════════════════════════════════════
      STANDINGS
-  ══════════════════════════════════════════════ */
+  ═════════════════════════════════════════════════ */
   function renderStandings() {
     const order = HORSES
       .map((h, i) => ({ h, pos: positions[i] }))
@@ -582,9 +674,9 @@
     });
   }
 
-  /* ══════════════════════════════════════════════
+  /* ════════════════════════════════════════════════
      BETS TABLE
-  ══════════════════════════════════════════════ */
+  ═════════════════════════════════════════════════ */
   function renderBetsTable() {
     if (bets.length === 0) {
       betsBody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:10px">Sin apuestas aún</td></tr>';
@@ -619,9 +711,9 @@
     });
   }
 
-  /* ══════════════════════════════════════════════
+  /* ════════════════════════════════════════════════
      HORSE PICK CARDS
-  ══════════════════════════════════════════════ */
+  ═════════════════════════════════════════════════ */
   function renderHorsePicks() {
     horsePickList.innerHTML = '';
     HORSES.forEach(h => {
@@ -644,9 +736,9 @@
   renderHorsePicks();
   renderStandings();
 
-  /* ══════════════════════════════════════════════
+  /* ════════════════════════════════════════════════
      WALLET
-  ══════════════════════════════════════════════ */
+  ═════════════════════════════════════════════════ */
   function updateWalletDisplay() {
     walletDisplay.textContent = `$${wallet.toFixed(2)}`;
     walletDisplay.className = 'wallet-value' + (wallet < 20 ? ' low' : '');
@@ -663,9 +755,9 @@
     btnRace.disabled = bets.length === 0;
   });
 
-  /* ══════════════════════════════════════════════
+  /* ════════════════════════════════════════════════
      PLACE BET
-  ══════════════════════════════════════════════ */
+  ═════════════════════════════════════════════════ */
   btnBet.addEventListener('click', () => {
     if (racing || finished) return;
     if (selectedHorse === null) { showMsg('Selecciona un caballo primero', 'err'); return; }
@@ -688,9 +780,9 @@
     setTimeout(() => { betMsg.textContent = ''; betMsg.className = 'msg'; }, 3000);
   }
 
-  /* ══════════════════════════════════════════════
-     RACE SIMULATION
-  ══════════════════════════════════════════════ */
+  /* ════════════════════════════════════════════════
+     RACE SIMULATION WITH ANIME.JS
+  ═════════════════════════════════════════════════ */
   btnRace.addEventListener('click', startRace);
 
   function startRace() {
@@ -699,6 +791,11 @@
     finished = false;
     finishOrder = [];
     positions = HORSES.map(() => 0);
+
+    // Cancel any existing animations
+    horseAnimations.forEach(anim => anim.pause());
+    horseAnimations = [];
+
     summaryPanel.className = 'summary-panel';
 
     // Randomize base speeds (bell-curve around odds-influenced center)
@@ -714,49 +811,68 @@
     btnBet.disabled  = true;
     playStart();
 
-    let last = null;
-    function frame(ts) {
-      if (!last) last = ts;
-      const dt = (ts - last) / 1000;
-      last = ts;
+    // Create anime.js animations for each horse
+    HORSES.forEach((h, index) => {
+      // Calculate duration based on speed (faster horses = shorter duration)
+      // Base duration: 3000ms for speed 1.0
+      const baseDuration = 3000;
+      const speedFactor = h.speed;
+      const duration = baseDuration / speedFactor;
 
-      let allDone = true;
-      HORSES.forEach((h, i) => {
-        if (positions[i] >= 1) return;
-        allDone = false;
+      // Add some randomness to duration (±20%)
+      const randomizedDuration = duration * (0.8 + Math.random() * 0.4);
 
-        // Speed with micro-jitter for excitement
-        const jitter = 1 + (Math.random() - .5) * .3;
-        positions[i] += h.speed * jitter * dt * 0.12;
+      // Create animation object
+      const horseProgress = { value: 0 };
 
-        // Natural speed changes
-        h.speed += (Math.random() - .5) * 0.03;
-        h.speed = Math.max(0.4, Math.min(1.8, h.speed));
+      const anim = anime({
+        targets: horseProgress,
+        value: [0, 1],
+        duration: randomizedDuration,
+        easing: 'linear',
+        update: function(anim) {
+          // Update position
+          positions[index] = anim.animatables[0].target.value;
 
-        if (positions[i] >= 1) {
-          positions[i] = 1;
-          finishOrder.push(h.id);
-          if (finishOrder.length === 1) playFinish();
+          // Update frame animation based on time
+          const now = performance.now();
+          const frameDuration = 100; // ms per frame (adjust for desired FPS)
+          if (now - lastFrameTime[index] > frameDuration) {
+            horseFrame[index] = (horseFrame[index] + 1) % horseFrameCount;
+            lastFrameTime[index] = now;
+          }
+
+          // Update standings and redraw
+          renderStandings();
+          drawTrack();
+
+          // Play hoofbeat sound occasionally
+          if (Math.random() > 0.97) playHoofbeat();
+
+          // Check if horse finished
+          if (anim.animatables[0].progress >= 1 && !finishOrder.includes(h.id)) {
+            finishOrder.push(h.id);
+
+            // Play finish sound for first horse
+            if (finishOrder.length === 1) {
+              playFinish();
+            }
+
+            // Check if all horses finished
+            if (finishOrder.length === HORSES.length) {
+              setTimeout(endRace, 300); // Small delay to show final positions
+            }
+          }
         }
       });
 
-      playHoofbeat();
-      drawTrack();
-      renderStandings();
-
-      if (!allDone || finishOrder.length < HORSES.length) {
-        animId = requestAnimationFrame(frame);
-      } else {
-        endRace();
-      }
-    }
-
-    animId = requestAnimationFrame(frame);
+      horseAnimations.push(anim);
+    });
   }
 
-  /* ══════════════════════════════════════════════
+  /* ════════════════════════════════════════════════
      END RACE
-  ══════════════════════════════════════════════ */
+  ═════════════════════════════════════════════════ */
   function endRace() {
     racing   = false;
     finished = true;
@@ -792,11 +908,15 @@
 
     btnRace.disabled = true;
     btnBet.disabled  = false;
+
+    // Clean up animations
+    horseAnimations.forEach(anim => anim.pause());
+    horseAnimations = [];
   }
 
-  /* ══════════════════════════════════════════════
+  /* ════════════════════════════════════════════════
      NEW RACE
-  ══════════════════════════════════════════════ */
+  ═════════════════════════════════════════════════ */
   btnNewRace.addEventListener('click', () => {
     raceNum++;
     raceName.textContent = `CARRERA Nº ${raceNum}`;
