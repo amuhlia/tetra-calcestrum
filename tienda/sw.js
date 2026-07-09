@@ -3,7 +3,7 @@
  * Estrategia: Cache First para assets estáticos, Network First para HTML
  */
 
-const CACHE_NAME    = 'novamart-v1';
+const CACHE_NAME    = 'novamart-v2';
 const STATIC_ASSETS = [
   './',
   './index.html',

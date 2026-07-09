@@ -257,7 +257,7 @@
 </head>
 <body>
 
-  <a class="back-btn" href="../?_cb=1783030550">&#8592; Portal</a>
+  <a class="back-btn" href="../">&#8592; Portal</a>
 
   <header>
     <h1>🏇 Hipódromo Virtual</h1>
@@ -284,7 +284,6 @@
       <div class="summary-title">🏆 RESULTADO FINAL</div>
       <div class="summary-podium" id="summaryPodium"></div>
       <div class="summary-net" id="summaryNet"></div>
-      <button class="btn-new-race" id="btnNewRace">Nueva carrera</button>
     </div>
 
     <!-- Bottom grid -->
@@ -317,6 +316,7 @@
 
           <!-- Launch race -->
           <button class="btn-race" id="btnRace" disabled>🚦 ¡ARRANCAR CARRERA!</button>
+          <button class="btn-race" id="btnNewRaceMain">Nueva carrera</button>
         </div>
       </div>
 
@@ -376,6 +376,7 @@
   let racing        = false;
   let finished      = false;
   let selectedHorse = null;
+  let autoRestartTimer = null;
 
   // Race positions (0–1 progress)
   let positions     = HORSES.map(() => 0);
@@ -398,6 +399,7 @@
   const btnBet        = document.getElementById('btnBet');
   const betMsg        = document.getElementById('betMsg');
   const btnRace       = document.getElementById('btnRace');
+  const btnNewRaceMain = document.getElementById('btnNewRaceMain');
   const betsBody      = document.getElementById('betsBody');
   const standingsList = document.getElementById('standingsList');
   const raceStatus    = document.getElementById('raceStatus');
@@ -406,8 +408,11 @@
   const summaryPanel  = document.getElementById('summaryPanel');
   const summaryPodium = document.getElementById('summaryPodium');
   const summaryNet    = document.getElementById('summaryNet');
-  const btnNewRace    = document.getElementById('btnNewRace');
   const horsePickList = document.getElementById('horsePickList');
+
+// Initial state: disable both buttons (ready for first bet)
+btnRace.disabled = true;
+btnNewRaceMain.disabled = true;
 
   /* ════════════════════════════════════════════════
      IMAGE LOADING
@@ -786,7 +791,8 @@
   btnRace.addEventListener('click', startRace);
 
   function startRace() {
-    if (racing || bets.length === 0) return;
+    console.log('startrace called');
+    if (racing || bets.length === 0) { console.log('startRace aborted: racing=', racing, 'bets.length=', bets.length); return; }
     racing   = true;
     finished = false;
     finishOrder = [];
@@ -809,13 +815,17 @@
     raceStatusTxt.textContent = '¡La carrera ha comenzado!';
     btnRace.disabled = true;
     btnBet.disabled  = true;
+    btnNewRaceMain.disabled = true;  // Visible but disabled during race
     playStart();
+    console.log('About to create anime animations');
+    console.log('anime library:', typeof anime);
 
     // Create anime.js animations for each horse
     HORSES.forEach((h, index) => {
+      console.log('Processing horse', h.name);
       // Calculate duration based on speed (faster horses = shorter duration)
-      // Base duration: 3000ms for speed 1.0
-      const baseDuration = 3000;
+// Base duration increased to make race 500% slower (5x longer)
+      const baseDuration = 1000000;
       const speedFactor = h.speed;
       const duration = baseDuration / speedFactor;
 
@@ -831,8 +841,9 @@
         duration: randomizedDuration,
         easing: 'linear',
         update: function(anim) {
+          console.log('anime update for horse', h.name, 'progress:', anim.progress);
           // Update position
-          positions[index] = anim.animatables[0].target.value;
+          positions[index] = anim.progress;
 
           // Update frame animation based on time
           const now = performance.now();
@@ -849,9 +860,10 @@
           // Play hoofbeat sound occasionally
           if (Math.random() > 0.97) playHoofbeat();
 
-          // Check if horse finished
-          if (anim.animatables[0].progress >= 1 && !finishOrder.includes(h.id)) {
+          // Check if horse finished (with tolerance)
+          if (anim.progress >= 0.999 && !finishOrder.includes(h.id)) {
             finishOrder.push(h.id);
+            console.log('Horse finished:', h.name, 'finishOrder length:', finishOrder.length, 'total horses:', HORSES.length);
 
             // Play finish sound for first horse
             if (finishOrder.length === 1) {
@@ -860,6 +872,7 @@
 
             // Check if all horses finished
             if (finishOrder.length === HORSES.length) {
+              console.log('All horses finished, triggering endRace in 300ms');
               setTimeout(endRace, 300); // Small delay to show final positions
             }
           }
@@ -874,9 +887,17 @@
      END RACE
   ═════════════════════════════════════════════════ */
   function endRace() {
+    console.log('endRace entered');
     racing   = false;
     finished = true;
     raceStatus.className = 'race-status finished';
+    console.log('about to set btnNewRaceMain.disabled = false');
+    if (btnNewRaceMain) {
+      btnNewRaceMain.disabled = false;
+      console.log('btnNewRaceMain disabled set to false');
+    } else {
+      console.warn('btnNewRaceMain is null/undefined');
+    }
     const winner = HORSES.find(h => h.id === finishOrder[0]);
     raceStatusTxt.textContent = `🏁 Ganador: ${winner.emoji} ${winner.name} (×${winner.odds.toFixed(1)})`;
 
@@ -905,19 +926,25 @@
     summaryNet.textContent = `Balance de la carrera: ${netSign}$${net.toFixed(2)}`;
     summaryNet.className   = 'summary-net ' + (net >= 0 ? 'positive' : 'negative');
     summaryPanel.className = 'summary-panel show';
-
-    btnRace.disabled = true;
-    btnBet.disabled  = false;
+    console.log('endRace: btnNewRaceMain =', btnNewRaceMain);
+    if (btnNewRaceMain) {
+      btnRace.disabled = true;   // Mantener deshabilitado después de terminar
+      btnBet.disabled  = false;  // Habilitar botón de apuesta para próxima carrera
+      btnNewRaceMain.disabled = false; // Habilitado cuando termina la carrera
+    } else {
+      console.warn('btnNewRaceMain is null or undefined');
+    }
 
     // Clean up animations
     horseAnimations.forEach(anim => anim.pause());
     horseAnimations = [];
+
+    // Automatically start a new race after 5 seconds
+    autoRestartTimer = setTimeout(startNewRace, 5000);
   }
 
-  /* ════════════════════════════════════════════════
-     NEW RACE
-  ═════════════════════════════════════════════════ */
-  btnNewRace.addEventListener('click', () => {
+  function startNewRace() {
+    btnNewRaceMain.disabled = true;   // Visible but disabled at start of race
     raceNum++;
     raceName.textContent = `CARRERA Nº ${raceNum}`;
     bets          = [];
@@ -942,6 +969,17 @@
     btnRace.disabled        = true;
     btnBet.disabled         = false;
     betMsg.textContent      = '';
+  }
+
+  /* ════════════════════════════════════════════════
+     NEW RACE
+  ═════════════════════════════════════════════════ */
+  btnNewRaceMain.addEventListener('click', () => {
+    if (autoRestartTimer !== null) {
+      clearTimeout(autoRestartTimer);
+      autoRestartTimer = null;
+    }
+    startNewRace();
   });
 
   </script>

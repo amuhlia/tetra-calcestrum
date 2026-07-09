@@ -48,8 +48,9 @@ Tetra Calcestrum es un portal web que agrupa múltiples aplicaciones independien
 ### Portal Principal (`index.html`)
 - Interfaz moderna con gradientes y efectos visuales
 - Tarjetas de aplicación con diseños neumorficos
-- Sistema de contacto integrado con copia al portapapeles
+- Sistema de contacto integrado con copia al portapap_copy al portapapeles
 - Diseño responsivo para móvil y escritorio
+- Botón de acceso a "Apps de Inteligencia Artificial" que redirecciona a https://adsapiensdoc.netlify.app/
 
 ### Hipódromo Virtual (`apuesta/`)
 - Simulador de carreras de caballos con sistema de apuestas
@@ -64,6 +65,7 @@ Tetra Calcestrum es un portal web que agrupa múltiples aplicaciones independien
 - Efectos de sonido usando Web Audio API
 - Resumen de carrera con podio y balance
 - **Altura de la pista aumentada** para visualizar claramente los cinco carriles de caballos simultáneamente
+- **Reinicio automático después de 5 segundos** al finalizar una carrera, conservando el saldo disponible para continuar jugando sin interrupciones
 
 ### Otras Aplicaciones
 - **Tienda Virtual**: PWA completa con carrito, checkout y catálogo de productos
@@ -179,4 +181,4 @@ Este proyecto fue desarrollado como una demostración de capacidades de desarrol
 
 ---
 
-*Documento actualizado para reflejar las últimas implementaciones (sistema de imágenes de caballos dual, altura de pista aumentada y corrección de índice de frame).*
+*Documento actualizado para reflejar las últimas implementaciones (sistema de imágenes de caballos dual, altura de pista aumentada, corrección de índice de frame, ajustes recientes en hipodromo commit 85b61fb, adición de botón de Apps de Inteligencia Artificial y reinicio automático de carrera en hipodromo virtual).*
